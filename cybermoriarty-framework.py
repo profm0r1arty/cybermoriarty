@@ -1,11 +1,12 @@
 import socket
+import requests
 import nmap
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.ensemble import IsolationForest
-import numpy as np
 from msfrpc import MsfRpcClient
-from scapy.all import sniff, IP
+import numpy as np
+from scapy.all import sniff
+from sklearn.ensemble import IsolationForest
 
 class ThreatIntelligence:
     def __init__(self):
@@ -17,13 +18,14 @@ class ThreatIntelligence:
 class CyberMoriarty:
     def __init__(self):
         self.model = RandomForestClassifier()
-        self.anomaly_model = IsolationForest(contamination=0.1)  # Adjust contamination as needed
         self.vulnerabilities = []
         self.exploit_suggestions = []
         self.attack_log = []
         self.target = None
         self.threat_intelligence = ThreatIntelligence()
         self.msfrpc_client = MsfRpcClient('YOUR_METASPLOIT_PASSWORD', ssl=True)
+        self.anomaly_model = IsolationForest(contamination=0.1)  # For anomaly detection
+
     def resolve_ip(self, website):
         try:
             self.target = socket.gethostbyname(website)
@@ -48,77 +50,38 @@ class CyberMoriarty:
                         'product': scanner[host][proto][port]['product']
                     })
 
-    def collect_network_data(self, packet_count=100):
-        def packet_to_row(packet):
-            return {
-                'src': packet[IP].src,
-                'dst': packet[IP].dst,
-                'proto': packet[IP].proto,
-                'len': len(packet),
-                'ttl': packet[IP].ttl
-            }
-
-        packets = sniff(count=packet_count, filter="ip", prn=packet_to_row)
-        df = pd.DataFrame(packets)
-        return df
-
-    def detect_anomalies(self, data):
-        # Train the anomaly detection model on the network traffic data
-        self.anomaly_model.fit(data)
-        anomalies = self.anomaly_model.predict(data)
-        return anomalies
-
-    def detect_anomalies(self, data):
-        # Train the anomaly detection model on the network traffic data
-        self.anomaly_model.fit(data)
-        anomalies = self.anomaly_model.predict(data)
-        return anomalies   
-
     def suggest_exploits(self):
-     dataset = [
-        [22, 'ssh', 'OpenSSH_7.6p1 Ubuntu-4ubuntu0.3', 1],
-        [80, 'http', 'Apache/2.4.29 (Ubuntu)', 0],
-        [443, 'https', 'Apache/2.4.29 (Ubuntu)', 1],
-        [3306, 'mysql', 'MySQL 5.7', 1],
-        [21, 'ftp', 'vsFTPd 3.0.3', 1],
-        [23, 'telnet', 'default', 1],
-        [25, 'smtp', 'Postfix 3.3.0', 0],
-        [110, 'pop3', 'Dovecot 2.3.4', 1],
-        [8080, 'http-proxy', 'Squid 4.6', 1],
-        [1433, 'mssql', 'Microsoft SQL Server 2017', 1]
-    ]
-     df = pd.DataFrame(dataset, columns=['port', 'service', 'version', 'known_exploit'])
-     X = df[['port', 'service', 'version']]
-     y = df['known_exploit']
-     self.model.fit(X, y)
+        dataset = [
+            [22, 'ssh', 'OpenSSH_7.6p1 Ubuntu-4ubuntu0.3', 1],
+            [80, 'http', 'Apache/2.4.29 (Ubuntu)', 0],
+            [443, 'https', 'Apache/2.4.29 (Ubuntu)', 1],
+            [3306, 'mysql', 'MySQL 5.7', 1],
+            [21, 'ftp', 'vsFTPd 3.0.3', 1],
+            [23, 'telnet', 'default', 1],
+            [25, 'smtp', 'Postfix 3.3.0', 0],
+            [110, 'pop3', 'Dovecot 2.3.4', 1],
+            [8080, 'http-proxy', 'Squid 4.6', 1],
+            [1433, 'mssql', 'Microsoft SQL Server 2017', 1]
+        ]
+        df = pd.DataFrame(dataset, columns=['port', 'service', 'version', 'known_exploit'])
+        X = df[['port', 'service', 'version']]
+        y = df['known_exploit']
+        self.model.fit(X, y)
 
-     if self.vulnerabilities:
-        for vulnerability in self.vulnerabilities:
-            port = vulnerability['port']
-            service = vulnerability['name']
-            version = vulnerability['product']
-            exploit_suggestion = self.model.predict([[port, service, version]])[0]
-            self.exploit_suggestions.append({
-                'port': port,
-                'service': service,
-                'version': version,
-                'exploit_suggestion': exploit_suggestion
-            })
-    
-      # Anomaly detection part
-        network_data = self.collect_network_data()  # Placeholder function
-        anomalies = self.detect_anomalies(network_data)
-        if np.any(anomalies == -1):  # -1 indicates anomaly
-            for anomaly in anomalies:
-                # Treat each anomaly as a potential unknown exploit vector
+        if self.vulnerabilities:
+            for vulnerability in self.vulnerabilities:
+                port = vulnerability['port']
+                service = vulnerability['name']
+                version = vulnerability['product']
+                exploit_suggestion = self.model.predict([[port, service, version]])[0]
                 self.exploit_suggestions.append({
-                    'port': None,
-                    'service': 'Unknown',
-                    'version': 'Unknown',
-                    'exploit_suggestion': 1  # Treat as a high-risk suggestion
+                    'port': port,
+                    'service': service,
+                    'version': version,
+                    'exploit_suggestion': exploit_suggestion
                 })
 
-    # Anomaly detection part
+        # Anomaly detection part
         network_data = self.collect_network_data().to_numpy()
         anomalies = self.detect_anomalies(network_data)
         if np.any(anomalies == -1):  # -1 indicates anomaly
@@ -172,6 +135,26 @@ class CyberMoriarty:
         with open("cybersecurity_report.txt", "w") as f:
             f.write(report)
         print("Cybersecurity report generated: cybersecurity_report.txt")
+
+    def collect_network_data(self, packet_count=100):
+        def packet_to_row(packet):
+            return {
+                'src': packet[IP].src,
+                'dst': packet[IP].dst,
+                'proto': packet[IP].proto,
+                'len': len(packet),
+                'ttl': packet[IP].ttl
+            }
+
+        packets = sniff(count=packet_count, filter="ip", prn=packet_to_row)
+        df = pd.DataFrame(packets)
+        return df
+
+    def detect_anomalies(self, data):
+        # Train the anomaly detection model on the network traffic data
+        self.anomaly_model.fit(data)
+        anomalies = self.anomaly_model.predict(data)
+        return anomalies
 
 if __name__ == "__main__":
     tool = CyberMoriarty()
