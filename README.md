@@ -1,6 +1,6 @@
 # CyberMoriarty
 
-CyberMoriarty is an AI-driven pentesting tool designed to identify and exploit common vulnerabilities in target websites. It leverages machine learning and Metasploit to suggest and execute exploits, generating a detailed cybersecurity report.
+CyberMoriarty is an AI-driven pentesting tool designed to identify and exploit vulnerabilities in target websites. It leverages machine learning and Metasploit to suggest and execute exploits, generating a detailed cybersecurity report.
 
 ## Features
 
