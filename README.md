@@ -13,7 +13,6 @@ CyberMoriarty is an AI-driven pentesting tool designed to identify and exploit v
 ## Prerequisites
 
 - Python 3.6+
-- Kali Linux or any Linux distribution with Metasploit installed.
 - The following Python libraries:
   - `socket`
   - `requests`
