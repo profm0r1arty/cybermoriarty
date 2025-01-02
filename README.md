@@ -4,7 +4,6 @@ CyberMoriarty is an AI-driven pentesting tool designed to identify and exploit v
 
 ## Features
 
-- Resolves IP addresses of target websites.
 - Scans for open ports and running services.
 - Suggests exploits for detected vulnerabilities.
 - Executes attacks using Machine Learning(RandomForestClassifier).
