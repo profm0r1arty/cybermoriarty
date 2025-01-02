@@ -7,7 +7,7 @@ CyberMoriarty is an AI-driven pentesting tool designed to identify and exploit c
 - Resolves IP addresses of target websites.
 - Scans for open ports and running services.
 - Suggests exploits for detected vulnerabilities.
-- Executes attacks using Metasploit.
+- Executes attacks using Machine Learning(RandomForestClassifier).
 - Generates comprehensive cybersecurity reports.
 
 ## Prerequisites
@@ -17,10 +17,11 @@ CyberMoriarty is an AI-driven pentesting tool designed to identify and exploit c
 - The following Python libraries:
   - `socket`
   - `requests`
-  - `nmap`
+  - `numpy`
   - `pandas`
   - `scikit-learn`
-  - `pymetasploit3`
+  - `tkinter`
+  - `bs4`
 
 ## Installation
 
