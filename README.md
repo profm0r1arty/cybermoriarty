@@ -25,5 +25,5 @@ CyberMoriarty is an AI-driven pentesting tool designed to identify and exploit v
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/profm0r1arty/CyberMoriarty.git
-   cd CyberMoriarty
+   git clone https://github.com/profm0r1arty/cybermoriarty.git
+   cd cybermoriarty
