@@ -34,7 +34,7 @@ CyberMoriarty is an **AI-driven penetration testing tool** that detects, exploit
 
 ### Setup
 ```bash
-git clone https://github.com/yourusername/cybermoriarty.git
+git clone https://github.com/profm0r1arty/cybermoriarty.git
 cd cybermoriarty
 pip install -r requirements.txt
 python cybermoriarty.py --help
