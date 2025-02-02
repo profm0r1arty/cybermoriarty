@@ -41,18 +41,6 @@ python cybermoriarty.py --help
 ```
 
 ## ⚡ Usage
-Run a full scan on a target website:
-```bash
-python cybermoriarty.py --target https://example.com --scan
-```
-Exploit detected vulnerabilities:
-```bash
-python cybermoriarty.py --target https://example.com --exploit
-```
-View real-time logs:
-```bash
-python cybermoriarty.py --log
-```
 
 ## 📖 Documentation
 Check out the [full documentation](https://your-docs-url.com) for in-depth guides and examples.
